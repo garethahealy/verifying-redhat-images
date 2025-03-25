@@ -1,0 +1,1 @@
+# verifying-redhat-images
