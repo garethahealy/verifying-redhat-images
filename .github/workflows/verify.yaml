@@ -6,7 +6,7 @@ on: [ push, pull_request ]
 permissions: read-all
 
 jobs:
-  build:
+  cosign:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
@@ -17,11 +17,52 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
+      - name: Download Red Hat signing key
+        run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
+
       - name: Install Cosign
         uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3
 
-      - name: Download Red Hat signing key
-        run: wget https://security.access.redhat.com/data/63405576.txt
-
       - name: Verify ubi9/openjdk-21-runtime via cosign
-        run: cosign verify --key 63405576.txt --insecure-ignore-tlog=true registry.access.redhat.com/ubi9/openjdk-21-runtime:1.21-1.1741781258@sha256:360822c35c5741f542ab78fe123e6c4d9b68e0113a88d6e0250bb1f377b17f29
+        run: cosign verify --key /home/runner/redhat-sigstore.pub --insecure-ignore-tlog=true registry.access.redhat.com/ubi9/openjdk-21-runtime:1.21-1.1741781258@sha256:360822c35c5741f542ab78fe123e6c4d9b68e0113a88d6e0250bb1f377b17f29
+
+  podman:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Download Red Hat signing key
+        run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
+
+      - name: Configure sigstore policy
+        run: |
+          mkdir -p ~/.config/containers/registries.d
+          cp samples/HOME/.config/containers/policy.json ~/.config/containers/policy.json
+          cp samples/HOME/.config/containers/registries.d/sigstore-registries.yaml ~/.config/containers/registries.d/sigstore-registries.yaml
+
+          podman image trust show
+
+      - name: Pull allowed
+        run: podman pull registry.access.redhat.com/ubi9/openjdk-21-runtime:1.21-1.1741781258@sha256:360822c35c5741f542ab78fe123e6c4d9b68e0113a88d6e0250bb1f377b17f29
+
+      - name: Pull disallowed
+        continue-on-error: true
+        run: podman pull quay.io/podman/hello:latest
+
+      - name: Validate
+        id: validate
+        run: |
+          podman images
+          echo "pulled_images=$(podman images --noheading | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Fail if image pulls not expected value
+        if: steps.validate.outputs.pulled_images != 1
+        run: |
+          echo "Only expect 1 image to be pulled due to policy. Failing."
+          exit 1
