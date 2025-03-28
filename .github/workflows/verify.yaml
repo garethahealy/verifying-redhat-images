@@ -66,3 +66,39 @@ jobs:
         run: |
           echo "Only expect 1 image to be pulled due to policy. Failing."
           exit 1
+
+  skopeo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Download Red Hat signing key
+        run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
+
+      - name: Configure sigstore policy
+        run: |
+          mkdir -p ~/.config/containers/registries.d
+          cp samples/HOME/.config/containers/policy.json ~/.config/containers/policy.json
+          cp samples/HOME/.config/containers/registries.d/sigstore-registries.yaml ~/.config/containers/registries.d/sigstore-registries.yaml
+
+          podman image trust show
+
+      - name: Copy allowed
+        run: skopeo copy docker://registry.access.redhat.com/ubi9/openjdk-21-runtime@sha256:360822c35c5741f542ab78fe123e6c4d9b68e0113a88d6e0250bb1f377b17f29 dir:/tmp/openjdk-21-runtime
+
+      - name: Copy disallowed
+        continue-on-error: true
+        run: skopeo copy docker://quay.io/podman/hello:latest dir:/tmp/podman-hello
+
+      - name: Fail if image pulls not expected value
+        run: |
+          if [ -f /tmp/podman-hello/manifest.json ]; then
+            echo "/tmp/podman-hello/manifest.json exists."
+            exit 1
+          fi
