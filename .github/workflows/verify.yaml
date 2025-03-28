@@ -1,9 +1,13 @@
-name: "Verify ubi9/openjdk-21-runtime"
+name: "Verify"
 
 on: [ push, pull_request ]
 
 # Declare default permissions as read only.
 permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   cosign:
@@ -40,10 +44,10 @@ jobs:
       - name: Download Red Hat signing key
         run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
 
-      - name: Configure sigstore policy
+      - name: Configure podman policy
         run: |
           mkdir -p ~/.config/containers/registries.d
-          cp samples/HOME/.config/containers/policy.json ~/.config/containers/policy.json
+          cp samples/HOME/.config/containers/policy-ubi9.json ~/.config/containers/policy.json
           cp samples/HOME/.config/containers/registries.d/sigstore-registries.yaml ~/.config/containers/registries.d/sigstore-registries.yaml
 
           podman image trust show
@@ -81,10 +85,10 @@ jobs:
       - name: Download Red Hat signing key
         run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
 
-      - name: Configure sigstore policy
+      - name: Configure podman policy
         run: |
           mkdir -p ~/.config/containers/registries.d
-          cp samples/HOME/.config/containers/policy.json ~/.config/containers/policy.json
+          cp samples/HOME/.config/containers/policy-ubi9.json ~/.config/containers/policy.json
           cp samples/HOME/.config/containers/registries.d/sigstore-registries.yaml ~/.config/containers/registries.d/sigstore-registries.yaml
 
           podman image trust show
@@ -102,3 +106,40 @@ jobs:
             echo "/tmp/podman-hello/manifest.json exists."
             exit 1
           fi
+
+  cosign-ocp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3
+
+      - name: Initialize cosign
+        run: cosign initialize
+
+      - name: Verify quay.io/garethahealy/verifying-redhat-images via cosign
+        run: cosign verify --certificate-oidc-issuer=https://github.com/login/oauth --certificate-identity=garethahealy@gmail.com quay.io/garethahealy/verifying-redhat-images@sha256:ffa8fef9da8dd0ee8d2f54738054145f3e3fa3af2be6e8e6bd5d206c35adf23e
+
+      - name: Get certs
+        id: certs
+        run: |
+          echo "FULCIO_CA=$(awk '{print $0}' ~/.sigstore/root/targets/fulcio*.pem | base64 -w 0)" >> "$GITHUB_OUTPUT"
+          echo "REKOR_KEY=$(cat ~/.sigstore/root/targets/rekor.pub | base64 -w 0)" >> "$GITHUB_OUTPUT"
+
+      - name: Update samples/ocp/ImagePolicy/garethahealy_fulcio.yaml with keys
+        uses: mikefarah/yq@master
+        env:
+          FULCIO_CA: "${{ steps.certs.outputs.FULCIO_CA }}"
+          REKOR_KEY: "${{ steps.certs.outputs.REKOR_KEY }}"
+        with:
+          cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioCAData = env(FULCIO_CA), .spec.policy.rootOfTrust.fulcioCAWithRekor.rekorKeyData = env(REKOR_KEY)' samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
+
+      - name: cat samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
+        run: cat samples/ocp/ImagePolicy/garethahealy_fulcio.yaml

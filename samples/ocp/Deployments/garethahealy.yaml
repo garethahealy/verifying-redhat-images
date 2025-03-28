@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garethahealy
+spec:
+  selector:
+    matchLabels:
+      app: garethahealy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: garethahealy
+    spec:
+      containers:
+        - name: container
+          command:
+            - sleep
+            - '600'
+          image: >-
+            quay.io/garethahealy/verifying-redhat-images@sha256:ffa8fef9da8dd0ee8d2f54738054145f3e3fa3af2be6e8e6bd5d206c35adf23e
