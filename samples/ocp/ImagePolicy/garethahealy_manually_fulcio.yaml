@@ -2,7 +2,7 @@ apiVersion: config.openshift.io/v1alpha1
 kind: ImagePolicy
 metadata:
   annotations:
-    kubernetes.io/description: 'Require signature for ghcr.io/garethahealy/verifying-redhat-images/signed'
+    kubernetes.io/description: 'Require signature for ghcr.io/garethahealy/verifying-redhat-images/example which matches the manually signed process'
     release.openshift.io/feature-set: TechPreviewNoUpgrade
   name: garethahealy
 spec:
@@ -18,4 +18,4 @@ spec:
     signedIdentity:
       matchPolicy: MatchRepository
   scopes:
-    - ghcr.io/garethahealy/verifying-redhat-images/signed
+    - ghcr.io/garethahealy/verifying-redhat-images/example

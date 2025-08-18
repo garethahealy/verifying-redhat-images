@@ -14,8 +14,9 @@ spec:
     spec:
       containers:
         - name: container
+          imagePullPolicy: Always
           command:
             - sleep
             - '600'
           image: >-
-            ghcr.io/garethahealy/verifying-redhat-images/signed@sha256:4a4e19d6a9d451c9e489aa1b0b93f0ac80d035e0e01f8fc86725d00d6f7004e5
+            ghcr.io/garethahealy/verifying-redhat-images/example@sha256:ec7607ff344c7dee648b069e2a1fb1ca0674bc1e7716c2a16bee4560790b2402

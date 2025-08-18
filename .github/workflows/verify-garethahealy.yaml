@@ -13,12 +13,16 @@ jobs:
   build-and-sign:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       packages: write
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
         with:
           egress-policy: audit
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -28,9 +32,9 @@ jobs:
         uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2
         with:
           containerfiles: "Dockerfile"
-          image: "signed"
+          image: "example"
           oci: true
-          tags: "v1"
+          tags: "github-signed"
 
       - name: Push to ghcr.io
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
@@ -42,12 +46,45 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           tags: ${{ steps.build_image.outputs.tags }}
 
+      - name: Cosign login
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login --username ${{ github.repository_owner }} --password-stdin ghcr.io
+
+      - name: Sign Image
+        env:
+          image_uri: "ghcr.io/${{ github.repository }}/${{ steps.build_image.outputs.image }}@${{ steps.push_image.outputs.digest }}"
+        run: |
+          cosign sign --yes ${image_uri}
+
     outputs:
       image_uri: "ghcr.io/${{ github.repository }}/${{ steps.build_image.outputs.image }}@${{ steps.push_image.outputs.digest }}"
 
-  update-samples:
+  verify:
     runs-on: ubuntu-latest
     needs: [build-and-sign]
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+
+      - name: Initialize cosign
+        run: cosign initialize
+
+      - name: Verify ghcr.io/garethahealy/verifying-redhat-images via cosign
+        env:
+          image_uri: "${{ needs.build-and-sign.outputs.image_uri }}"
+        run: cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/garethahealy/verifying-redhat-images/.github/workflows/verify-garethahealy.yaml@${{ github.ref }} ${image_uri}
+
+  update-samples:
+    runs-on: ubuntu-latest
+    needs: [build-and-sign, verify]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
@@ -86,21 +123,21 @@ jobs:
           echo "FULCIO_CA=$(awk '{print $0}' fulcio_*.pem | base64 -w 0)" >> "$GITHUB_OUTPUT"
           echo "REKOR_KEY=$(cat rekor.pub | base64 -w 0)" >> "$GITHUB_OUTPUT"
 
-      - name: Update samples/ocp/ImagePolicy/garethahealy_fulcio.yaml with keys
+      - name: Update samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml with keys
         uses: mikefarah/yq@f03c9dc599c37bfcaf533427211d05e51e6fee64 # v4.47.1
         env:
           FULCIO_CA: "${{ steps.certs.outputs.FULCIO_CA }}"
           REKOR_KEY: "${{ steps.certs.outputs.REKOR_KEY }}"
         with:
-          cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioCAData = env(FULCIO_CA), .spec.policy.rootOfTrust.fulcioCAWithRekor.rekorKeyData = env(REKOR_KEY)' samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
+          cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioCAData = env(FULCIO_CA), .spec.policy.rootOfTrust.fulcioCAWithRekor.rekorKeyData = env(REKOR_KEY)' samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml
 
-      - name: Update samples/ocp/ImagePolicy/garethahealy_fulcio.yaml with issuer/email
+      - name: Update samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml with issuer/email
         uses: mikefarah/yq@f03c9dc599c37bfcaf533427211d05e51e6fee64 # v4.47.1
         env:
           OIDC_ISSUER: "https://github.com/login/oauth"
           SIGNED_EMAIL: "garethahealy@gmail.com"
         with:
-          cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioSubject.oidcIssuer = env(OIDC_ISSUER), .spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioSubject.signedEmail = env(SIGNED_EMAIL)' samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
+          cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioSubject.oidcIssuer = env(OIDC_ISSUER), .spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioSubject.signedEmail = env(SIGNED_EMAIL)' samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml
 
       - name: Update samples/ocp/Deployments/garethahealy.yaml with image
         uses: mikefarah/yq@f03c9dc599c37bfcaf533427211d05e51e6fee64 # v4.47.1
@@ -109,22 +146,10 @@ jobs:
         with:
           cmd: yq --inplace '.spec.template.spec.containers[0].image = env(image_uri)' samples/ocp/Deployments/garethahealy.yaml
 
-      - name: Update samples/HOME/.config/containers/policy-garethahealy.json
-        env:
-          FULCIO_CA: "${{ steps.certs.outputs.FULCIO_CA }}"
-          REKOR_KEY: "${{ steps.certs.outputs.REKOR_KEY }}"
-          OIDC_ISSUER: "https://github.com/login/oauth"
-          SIGNED_EMAIL: "garethahealy@gmail.com"
-        run: |
-          jq '.transports.docker."ghcr.io/garethahealy/verifying-redhat-images/signed"[].fulcio.caData = $ENV.FULCIO_CA | .transports.docker."ghcr.io/garethahealy/verifying-redhat-images/signed"[].fulcio.oidcIssuer = $ENV.OIDC_ISSUER | .transports.docker."ghcr.io/garethahealy/verifying-redhat-images/signed"[].fulcio.subjectEmail = $ENV.SIGNED_EMAIL | .transports.docker."ghcr.io/garethahealy/verifying-redhat-images/signed"[].rekorPublicKeyData = $ENV.REKOR_KEY' samples/HOME/.config/containers/policy-garethahealy.json > samples/HOME/.config/containers/policy-garethahealy.tmp
-
-          mv samples/HOME/.config/containers/policy-garethahealy.tmp samples/HOME/.config/containers/policy-garethahealy.json
-
       - name: cat samples/*
         run: |
-          cat samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
+          cat samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml
           cat samples/ocp/Deployments/garethahealy.yaml
-          cat samples/HOME/.config/containers/policy-garethahealy.json
 
       - name: Attach samples
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
