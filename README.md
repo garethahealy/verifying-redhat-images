@@ -90,3 +90,11 @@ NAME                            READY   STATUS                      RESTARTS   A
 garethahealy-765f5b78fc-95x55   0/1     SignatureValidationFailed   0          3s
 garethahealy-85d95f4c8d-vstks   1/1     Running                     0          40s
 ```
+
+Now, you are probably wondering; _why did we manually sign the image and not use the GitHub Action signed image?_
+It's due to design decisions highlighted in the [code](https://github.com/containers/image/blob/v5.36.1/signature/fulcio_cert.go#L173-L181)
+and [pull request](https://github.com/containers/image/pull/2235) showing the lack of support to validate against Fulcio URI SAN
+metadata.
+
+The TLDR is; `containers/image` only supports validating against the [email SAN](https://search.sigstore.dev/?logIndex=406429900) and
+does not support [URL SAN](https://search.sigstore.dev/?logIndex=406064670) which is used by GitHub Actions and Fulcio.
