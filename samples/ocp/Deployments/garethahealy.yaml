@@ -18,4 +18,4 @@ spec:
             - sleep
             - '600'
           image: >-
-            quay.io/garethahealy/verifying-redhat-images@sha256:ffa8fef9da8dd0ee8d2f54738054145f3e3fa3af2be6e8e6bd5d206c35adf23e
+            ghcr.io/garethahealy/verifying-redhat-images/signed@sha256:4a4e19d6a9d451c9e489aa1b0b93f0ac80d035e0e01f8fc86725d00d6f7004e5
