@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Setup go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
 
       - name: Install tuf-client
         run: go install github.com/theupdateframework/go-tuf/cmd/tuf-client@latest
@@ -87,7 +87,7 @@ jobs:
           echo "REKOR_KEY=$(cat rekor.pub | base64 -w 0)" >> "$GITHUB_OUTPUT"
 
       - name: Update samples/ocp/ImagePolicy/garethahealy_fulcio.yaml with keys
-        uses: mikefarah/yq@v4.47.1
+        uses: mikefarah/yq@f03c9dc599c37bfcaf533427211d05e51e6fee64 # v4.47.1
         env:
           FULCIO_CA: "${{ steps.certs.outputs.FULCIO_CA }}"
           REKOR_KEY: "${{ steps.certs.outputs.REKOR_KEY }}"
@@ -95,7 +95,7 @@ jobs:
           cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioCAData = env(FULCIO_CA), .spec.policy.rootOfTrust.fulcioCAWithRekor.rekorKeyData = env(REKOR_KEY)' samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
 
       - name: Update samples/ocp/ImagePolicy/garethahealy_fulcio.yaml with issuer/email
-        uses: mikefarah/yq@v4.47.1
+        uses: mikefarah/yq@f03c9dc599c37bfcaf533427211d05e51e6fee64 # v4.47.1
         env:
           OIDC_ISSUER: "https://github.com/login/oauth"
           SIGNED_EMAIL: "garethahealy@gmail.com"
@@ -103,7 +103,7 @@ jobs:
           cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioSubject.oidcIssuer = env(OIDC_ISSUER), .spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioSubject.signedEmail = env(SIGNED_EMAIL)' samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
 
       - name: Update samples/ocp/Deployments/garethahealy.yaml with image
-        uses: mikefarah/yq@v4.47.1
+        uses: mikefarah/yq@f03c9dc599c37bfcaf533427211d05e51e6fee64 # v4.47.1
         env:
           image_uri: "${{ needs.build-and-sign.outputs.image_uri }}"
         with:
@@ -127,7 +127,7 @@ jobs:
           cat samples/HOME/.config/containers/policy-garethahealy.json
 
       - name: Attach samples
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: samples
           include-hidden-files: true
