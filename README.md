@@ -36,17 +36,23 @@ Firstly, we need to collect the public certs we need to validate with:
 ```bash
 cosign initialize
 
-export FULCIO_CA=$(awk '{print $0}' ~/.sigstore/root/targets/fulcio*.pem | base64 -w 0)
-export REKOR_KEY=$(cat ~/.sigstore/root/targets/rekor.pub | base64 -w 0)
+tuf-client init https://tuf-repo-cdn.sigstore.dev ~/.sigstore/root/tuf-repo-cdn.sigstore.dev/root.json
 
-yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioCAData = env(FULCIO_CA), .spec.policy.rootOfTrust.fulcioCAWithRekor.rekorKeyData = env(REKOR_KEY)' samples/ocp/ImagePolicy/quay_garethahealy_fulcio.yaml
+tuf-client get https://tuf-repo-cdn.sigstore.dev fulcio_v1.crt.pem > fulcio_v1.crt.pem
+tuf-client get https://tuf-repo-cdn.sigstore.dev fulcio_intermediate_v1.crt.pem > fulcio_intermediate_v1.crt.pem
+
+curl --header 'Content-Type: application/x-pem-file' https://rekor.sigstore.dev/api/v1/log/publicKey > rekor.pub
+
+export FULCIO_CA=$(awk '{print $0}' fulcio_*.pem | base64 -w 0)
+export REKOR_KEY=$(cat rekor.pub | base64 -w 0)
+
+yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioCAData = env(FULCIO_CA), .spec.policy.rootOfTrust.fulcioCAWithRekor.rekorKeyData = env(REKOR_KEY)' samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
 ```
 
 Now, lets create the OCP bits:
 
 ```bash
-oc create -f samples/ocp/Project.yaml
-oc project playground
+oc new-project playground
 
 oc apply -f samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
 oc apply -f samples/ocp/Deployments/garethahealy.yaml
@@ -59,15 +65,15 @@ Hopefully, you should have a running pod - doing not much, as its just sleeping.
 To validate the ImagePolicy is working correctly, lets patch the Deployment with an unsigned image:
 
 ```bash
-oc patch deployment garethahealy --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"quay.io/garethahealy/verifying-redhat-images:unsigned"}]'
+oc patch deployment garethahealy --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"ghcr.io/garethahealy/verifying-redhat-images/signed:unsigned-v1"}]'
 ```
 
-Now looking at the running pods, we should see the signed (working correctly) and the unsigned pod showing a `SignatureValidationFailed` status:
+Now looking at the running pods, we should see the signed (_working correctly_) and the unsigned pod showing a `SignatureValidationFailed` status:
 
 ```bash
 oc get pods
 
 NAME                            READY   STATUS                      RESTARTS   AGE
-garethahealy-57f595d65d-wf69n   1/1     Running                     0          7m24s
-garethahealy-5b99f5f8cb-92lbs   0/1     SignatureValidationFailed   0          12s
+garethahealy-55c4d56689-546g8   1/1     Running                     0          118s
+garethahealy-6b88bcdc4f-rdwp7   0/1     SignatureValidationFailed   0          54s
 ```

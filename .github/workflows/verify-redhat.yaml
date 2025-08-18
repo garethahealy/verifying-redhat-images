@@ -1,4 +1,4 @@
-name: "Verify"
+name: "Verify Red Hat images"
 
 on: [ push, pull_request ]
 
@@ -25,7 +25,7 @@ jobs:
         run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@fb28c2b6339dcd94da6e4cbcbc5e888961f6f8c3 # v3
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 
       - name: Verify ubi9/openjdk-21-runtime via cosign
         run: cosign verify --key /home/runner/redhat-sigstore.pub --insecure-ignore-tlog=true registry.access.redhat.com/ubi9/openjdk-21-runtime:1.21-1.1741781258@sha256:360822c35c5741f542ab78fe123e6c4d9b68e0113a88d6e0250bb1f377b17f29
@@ -106,40 +106,3 @@ jobs:
             echo "/tmp/podman-hello/manifest.json exists."
             exit 1
           fi
-
-  cosign-ocp:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
-        with:
-          egress-policy: audit
-
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@fb28c2b6339dcd94da6e4cbcbc5e888961f6f8c3 # v3
-
-      - name: Initialize cosign
-        run: cosign initialize
-
-      - name: Verify quay.io/garethahealy/verifying-redhat-images via cosign
-        run: cosign verify --certificate-oidc-issuer=https://github.com/login/oauth --certificate-identity=garethahealy@gmail.com quay.io/garethahealy/verifying-redhat-images@sha256:ffa8fef9da8dd0ee8d2f54738054145f3e3fa3af2be6e8e6bd5d206c35adf23e
-
-      - name: Get certs
-        id: certs
-        run: |
-          echo "FULCIO_CA=$(awk '{print $0}' ~/.sigstore/root/targets/fulcio*.pem | base64 -w 0)" >> "$GITHUB_OUTPUT"
-          echo "REKOR_KEY=$(cat ~/.sigstore/root/targets/rekor.pub | base64 -w 0)" >> "$GITHUB_OUTPUT"
-
-      - name: Update samples/ocp/ImagePolicy/garethahealy_fulcio.yaml with keys
-        uses: mikefarah/yq@master
-        env:
-          FULCIO_CA: "${{ steps.certs.outputs.FULCIO_CA }}"
-          REKOR_KEY: "${{ steps.certs.outputs.REKOR_KEY }}"
-        with:
-          cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioCAData = env(FULCIO_CA), .spec.policy.rootOfTrust.fulcioCAWithRekor.rekorKeyData = env(REKOR_KEY)' samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
-
-      - name: cat samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
-        run: cat samples/ocp/ImagePolicy/garethahealy_fulcio.yaml
