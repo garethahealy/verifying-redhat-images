@@ -19,4 +19,4 @@ spec:
             - sleep
             - '600'
           image: >-
-            ghcr.io/garethahealy/verifying-redhat-images/example@sha256:ec7607ff344c7dee648b069e2a1fb1ca0674bc1e7716c2a16bee4560790b2402
+            ghcr.io/garethahealy/verifying-redhat-images/example@sha256:a0d5a938cdb53589060d5d1f6428a25bad7116a191ff350073211b514cddd1df

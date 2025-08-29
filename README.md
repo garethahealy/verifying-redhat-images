@@ -22,6 +22,8 @@ As its [TP](https://access.redhat.com/support/offerings/techpreview/), a feature
 
 ```bash
 oc apply -f samples/ocp/FeatureGates.yaml
+oc get ClusterImagePolicy/openshift --watch=true
+
 oc get ClusterImagePolicy/openshift -o yaml
 ```
 
@@ -34,10 +36,10 @@ If you want to validate your own images, see [garethahealy_fulcio.yaml](samples/
 Firstly, lets create an image that is manually signed:
 
 ```bash
-podman build . -t ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed
+podman build . -t ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed --platform linux/amd64
 podman push ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed
 
-IMAGE_SHA=$(cosign triangulate --type='digest' ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed)
+export IMAGE_SHA=$(cosign triangulate --type='digest' ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed)
 
 cosign sign -y ${IMAGE_SHA}
 
@@ -70,7 +72,7 @@ oc new-project playground
 oc apply -f samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml
 oc apply -f samples/ocp/Deployments/garethahealy.yaml
 
-oc get pods
+oc get pods --watch=true
 ```
 
 Hopefully, you should have a running pod - doing not much, as its just sleeping.
@@ -84,7 +86,7 @@ oc patch deployment garethahealy --type='json' -p='[{"op": "replace", "path": "/
 Now looking at the running pods, we should see the signed (_working correctly_) and the unsigned pod showing a `SignatureValidationFailed` status:
 
 ```bash
-oc get pods
+oc get pods --watch=true
 
 NAME                            READY   STATUS                      RESTARTS   AGE
 garethahealy-765f5b78fc-95x55   0/1     SignatureValidationFailed   0          3s
