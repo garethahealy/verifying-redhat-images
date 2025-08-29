@@ -57,6 +57,8 @@ jobs:
           cosign sign --yes ${image_uri}
 
     outputs:
+      image_repo: "ghcr.io/${{ github.repository }}/${{ steps.build_image.outputs.image }}"
+      image_digest: "${{ steps.push_image.outputs.digest }}"
       image_uri: "ghcr.io/${{ github.repository }}/${{ steps.build_image.outputs.image }}@${{ steps.push_image.outputs.digest }}"
 
   verify:
@@ -81,6 +83,21 @@ jobs:
         env:
           image_uri: "${{ needs.build-and-sign.outputs.image_uri }}"
         run: cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/garethahealy/verifying-redhat-images/.github/workflows/verify-garethahealy.yaml@${{ github.ref }} ${image_uri}
+
+  provenance_image:
+    needs: [build-and-sign]
+    permissions:
+      actions: read # for detecting the Github Actions environment.
+      id-token: write # for creating OIDC tokens for signing.
+      packages: write # for uploading attestations.
+    if: startsWith(github.ref, 'refs/tags/')
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ${{ needs.build-and-sign.outputs.image_repo }}
+      digest: ${{ needs.build-and-sign.outputs.image_digest }}
+      registry-username: ${{ github.repository_owner }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   update-samples:
     runs-on: ubuntu-latest

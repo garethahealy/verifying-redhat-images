@@ -46,6 +46,9 @@ jobs:
 
       - name: Configure podman policy
         run: |
+          cat samples/HOME/.config/containers/policy-ubi9.json
+          cat samples/HOME/.config/containers/registries.d/sigstore-registries.yaml
+          
           mkdir -p ~/.config/containers/registries.d
           cp samples/HOME/.config/containers/policy-ubi9.json ~/.config/containers/policy.json
           cp samples/HOME/.config/containers/registries.d/sigstore-registries.yaml ~/.config/containers/registries.d/sigstore-registries.yaml
