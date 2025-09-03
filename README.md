@@ -100,3 +100,49 @@ metadata.
 
 The TLDR is; `containers/image` only supports validating against the [email SAN](https://search.sigstore.dev/?logIndex=406429900) and
 does not support [URL SAN](https://search.sigstore.dev/?logIndex=406064670) which is used by GitHub Actions and Fulcio.
+
+## ACS Signature Integration
+
+As part of ACS [4.8](https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/4.8/html/operating/verify-image-signatures#securing-container-images-by-using-signature-integration_verify-image-signatures) support for Sigstore keyless
+verifcation has been implemented. The below steps provide an example of verifying an image signed by the public good instance.
+
+Firstly, lets create an Auth Provider in ACS:
+
+![ocp-auth-provider.png](images/ocp-auth-provider.png)
+
+And login via `roxctl`:
+
+```bash
+export ROX_ENDPOINT="$(oc get route/central -n stackrox -o json | jq -r '.status.ingress[0].host'):443"
+
+roxctl central login --endpoint=${ROX_ENDPOINT}
+```
+
+Now, lets create a [Signature Integration](samples/acs/signature-integration.json):
+
+- OIDC Issuer: `https://token.actions.githubusercontent.com`
+- Certificate Identity: `https://github.com/garethahealy/verifying-redhat-images/.github/workflows/verify-garethahealy.yaml@refs/tags/0.0.5`
+- Certificate Chain: `tuf-client get https://tuf-repo-cdn.sigstore.dev fulcio_v1.crt.pem | pbcopy`
+
+![signature-integration.png](images/signature-integration.png)
+
+And a policy for the [public good instance](samples/acs/public-good-signed.yaml) to enforce:
+
+![signature-policy.png](images/signature-policy.png)
+
+Finally, lets verify via `cosign` and `roxctl`:
+
+```bash
+export IMAGE_SHA=$(cosign triangulate --type='digest' ghcr.io/garethahealy/verifying-redhat-images/example:github-signed)
+cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/garethahealy/verifying-redhat-images/.github/workflows/verify-garethahealy.yaml@refs/tags/0.0.5 ${IMAGE_SHA}
+
+roxctl image check --endpoint=${ROX_ENDPOINT} --image ${IMAGE_SHA}
+```
+
+_NOTE:_ If you see the below error, set `export GRPC_ENFORCE_ALPN_ENABLED=false`
+
+```
+ERROR: Checking image failed: retrieving alerts: could not check build-time alerts:
+rpc error: code = Unavailable desc = connection error: desc = "transport: authentication handshake failed: credentials: cannot check peer: missing selected ALPN property. If you upgraded from a grpc-go version earlier than 1.67, your TLS connections may have stopped working due to ALPN enforcement.
+For more details, see: https://github.com/grpc/grpc-go/issues/434". Retrying after 3 seconds...
+```

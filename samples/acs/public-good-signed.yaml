@@ -1,0 +1,32 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: public-good-signed
+spec:
+  policyName: public-good-signed
+  description: Image signed via Sigstore public good
+  categories:
+    - Supply Chain Security
+  lifecycleStages:
+    - BUILD
+    - DEPLOY
+  eventSource: NOT_APPLICABLE
+  severity: LOW_SEVERITY
+  enforcementActions:
+    - FAIL_BUILD_ENFORCEMENT
+    - SCALE_TO_ZERO_ENFORCEMENT
+    - UNSATISFIABLE_NODE_CONSTRAINT_ENFORCEMENT
+  policySections:
+    - sectionName: Rule 1
+      policyGroups:
+        - fieldName: Image Signature Verified By
+          booleanOperator: OR
+          values:
+            - value: io.stackrox.signatureintegration.1dc6d1af-4f17-4eae-a16f-1eaf9aefc49a
+        - fieldName: Image Registry
+          booleanOperator: OR
+          values:
+            - value: ghcr.io
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false

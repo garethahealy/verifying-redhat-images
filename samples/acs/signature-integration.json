@@ -1,0 +1,29 @@
+{
+  "integrations": [
+    {
+      "id": "io.stackrox.signatureintegration.1dc6d1af-4f17-4eae-a16f-1eaf9aefc49a",
+      "name": "public-good",
+      "cosign": {
+        "publicKeys": []
+      },
+      "cosignCertificates": [
+        {
+          "certificatePemEnc": "",
+          "certificateChainPemEnc": "-----BEGIN CERTIFICATE-----\nMIIB9zCCAXygAwIBAgIUALZNAPFdxHPwjeDloDwyYChAO/4wCgYIKoZIzj0EAwMw\nKjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTAeFw0y\nMTEwMDcxMzU2NTlaFw0zMTEwMDUxMzU2NThaMCoxFTATBgNVBAoTDHNpZ3N0b3Jl\nLmRldjERMA8GA1UEAxMIc2lnc3RvcmUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAT7\nXeFT4rb3PQGwS4IajtLk3/OlnpgangaBclYpsYBr5i+4ynB07ceb3LP0OIOZdxex\nX69c5iVuyJRQ+Hz05yi+UF3uBWAlHpiS5sh0+H2GHE7SXrk1EC5m1Tr19L9gg92j\nYzBhMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRY\nwB5fkUWlZql6zJChkyLQKsXF+jAfBgNVHSMEGDAWgBRYwB5fkUWlZql6zJChkyLQ\nKsXF+jAKBggqhkjOPQQDAwNpADBmAjEAj1nHeXZp+13NWBNa+EDsDP8G1WWg1tCM\nWP/WHPqpaVo0jhsweNFZgSs0eE7wYI4qAjEA2WB9ot98sIkoF3vZYdd3/VtWB5b9\nTNMea7Ix/stJ5TfcLLeABLE4BNJOsQ4vnBHJ\n-----END CERTIFICATE-----",
+          "certificateOidcIssuer": "https://token.actions.githubusercontent.com",
+          "certificateIdentity": "https://github.com/garethahealy/verifying-redhat-images/.github/workflows/verify-garethahealy.yaml@refs/tags/0.0.5",
+          "certificateTransparencyLog": {
+            "enabled": true,
+            "publicKeyPemEnc": ""
+          }
+        }
+      ],
+      "transparencyLog": {
+        "enabled": true,
+        "url": "https://rekor.sigstore.dev",
+        "validateOffline": false,
+        "publicKeyPemEnc": ""
+      }
+    }
+  ]
+}
