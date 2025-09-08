@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocp
+spec:
+  selector:
+    matchLabels:
+      app: ocp
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ocp
+    spec:
+      containers:
+        - name: container
+          imagePullPolicy: Always
+          image: >-
+            quay.io/openshift-release-dev/ocp-release:4.11.0-x86_64

@@ -27,7 +27,31 @@ oc get ClusterImagePolicy/openshift --watch=true
 oc get ClusterImagePolicy/openshift -o yaml
 ```
 
-Now the core OCP components images are validated against the Red Hat public key.
+Now the core OCP components images are validated against the Red Hat public key. To validate, we'll:
+
+```bash
+oc get nodes
+oc debug {pick a worker node}
+
+chroot /host
+cat /etc/containers/policy.json
+```
+
+The `cat` should show public key and configuration for `quay.io/openshift-release-dev/ocp-release`.
+We can also deploy a very old OCP image which was never signed to demonstrate anything from `quay.io/openshift-release-dev/ocp-release` must comply with our new policy:
+
+```bash
+oc apply -f samples/ocp/Deployments/ocp-release.yaml
+```
+
+Now looking at the running pods, we should see pod showing a `SignatureValidationFailed` status:
+
+```bash
+oc get pods --watch=true
+
+NAME                  READY   STATUS             RESTARTS   AGE
+ocp-65c48cc76-bwrfg   0/1     SignatureValidationFailed   0          32s
+```
 
 ## OCP >= 4.18 - ImagePolicy
 
