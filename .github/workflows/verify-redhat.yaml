@@ -109,3 +109,53 @@ jobs:
             echo "/tmp/podman-hello/manifest.json exists."
             exit 1
           fi
+
+  oc-mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Download Red Hat signing key
+        run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
+
+      - name: Configure podman policy
+        run: |
+          mkdir -p ~/.config/containers/registries.d
+          cp samples/HOME/.config/containers/policy-ubi9.json ~/.config/containers/policy.json
+          cp samples/HOME/.config/containers/registries.d/sigstore-registries.yaml ~/.config/containers/registries.d/sigstore-registries.yaml
+
+          podman image trust show
+
+      - name: Install oc-mirror
+        run: |
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/oc-mirror.rhel9.tar.gz
+          tar -xzvf oc-mirror.rhel9.tar.gz
+          chmod +x oc-mirror
+
+          mkdir oc-mirror-data
+
+      - name: oc-mirror allowed
+        run: ./oc-mirror --v2 --remove-signatures=false --secure-policy=true --config samples/oc-mirror/imageset.yaml --log-level debug file://$(pwd)/oc-mirror-data
+
+      - name: oc-mirror disallowed
+        continue-on-error: true
+        run: ./oc-mirror --v2 --remove-signatures=false --secure-policy=true --config samples/oc-mirror/imageset-fail.yaml --log-level debug file://$(pwd)/oc-mirror-data
+
+      - name: Validate
+        id: validate
+        run: |
+          echo "pulled_images=$(tar -tf $(pwd)/oc-mirror-data/mirror_000001.tar | grep "podman/hello" | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Fail if image pulls not expected value
+        if: steps.validate.outputs.pulled_images != 0
+        run: |
+          echo "podman/hello exists."
+          tar -tf $(pwd)/oc-mirror-data/mirror_000001.tar | grep "podman/hello"
+          cat $(pwd)/oc-mirror-data/working-dir/logs/oc-mirror.log
+          exit 1

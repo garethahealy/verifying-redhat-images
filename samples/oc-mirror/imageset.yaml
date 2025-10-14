@@ -1,0 +1,5 @@
+kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v2alpha1
+mirror:
+  additionalImages:
+    - name: registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
