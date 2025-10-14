@@ -125,6 +125,12 @@ metadata.
 The TLDR is; `containers/image` only supports validating against the [email SAN](https://search.sigstore.dev/?logIndex=406429900) and
 does not support [URL SAN](https://search.sigstore.dev/?logIndex=406064670) which is used by GitHub Actions and Fulcio.
 
+## oc-mirror
+
+[oc-mirror v2](https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html-single/disconnected_environments/index#about-installing-oc-mirror-v2) supports signature validation while mirroring for disconnected installations.
+`oc-mirror` can be configured via its [policy.json](samples/HOME/.config/containers/policy-ubi9.json) and [registries.yaml](samples/HOME/.config/containers/registries.d/sigstore-registries.yaml)
+to only allow signed images, see: [.github/workflows/verify-redhat.yaml](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L124-L144)
+
 ## ACS Signature Integration
 
 As part of ACS [4.8](https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/4.8/html/operating/verify-image-signatures#securing-container-images-by-using-signature-integration_verify-image-signatures) support for Sigstore keyless
