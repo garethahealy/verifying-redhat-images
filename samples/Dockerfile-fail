@@ -1,0 +1,3 @@
+FROM quay.io/podman/hello:latest
+
+RUN echo "hello"

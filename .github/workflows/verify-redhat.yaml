@@ -74,6 +74,50 @@ jobs:
           echo "Only expect 1 image to be pulled due to policy. Failing."
           exit 1
 
+  buildah:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Download Red Hat signing key
+        run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
+
+      - name: Configure buildah policy
+        run: |
+          cat samples/HOME/.config/containers/policy-ubi9.json
+          cat samples/HOME/.config/containers/registries.d/sigstore-registries.yaml
+
+          mkdir -p ~/.config/containers/registries.d
+          cp samples/HOME/.config/containers/policy-ubi9.json ~/.config/containers/policy.json
+          cp samples/HOME/.config/containers/registries.d/sigstore-registries.yaml ~/.config/containers/registries.d/sigstore-registries.yaml
+
+          podman image trust show
+
+      - name: Buildah allowed
+        run: buildah build -f samples/Dockerfile -t jdk samples/
+
+      - name: Buildah disallowed
+        continue-on-error: true
+        run: buildah build -f samples/Dockerfile-fail -t fail samples/
+
+      - name: Validate
+        id: validate
+        run: |
+          podman images
+          echo "pulled_images=$(podman images --noheading | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Fail if image pulls not expected value
+        if: steps.validate.outputs.pulled_images != 2
+        run: |
+          echo "Only expect 2 image to be pulled due to policy; localhost/jdk and registry.access.redhat.com/ubi9/openjdk-21-runtime. Failing."
+          exit 1
+
   skopeo:
     runs-on: ubuntu-latest
     steps:
