@@ -38,7 +38,7 @@ Now the core OCP components images are validated against the Red Hat public key.
 
 ```bash
 oc get nodes
-oc debug {pick a worker node}
+oc debug node/{pick a worker node}
 
 chroot /host
 cat /etc/containers/policy.json
