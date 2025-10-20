@@ -3,17 +3,24 @@
 Examples of how to verify Red Hat images from [https://catalog.redhat.com](https://catalog.redhat.com/search?searchType=containers&partnerName=Red%20Hat&p=1)
 
 ## Cosign
-`cosign` can be used to verify image signatures, see: [.github/workflows/verify-redhat.yaml](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L24-L31)
 
-## Podman
-`podman` can be configured via its [policy.json](samples/HOME/.config/containers/policy-ubi9.json) and [registries.yaml](samples/HOME/.config/containers/registries.d/sigstore-registries.yaml)
-to only allow signed images, see: [.github/workflows/verify-redhat.yaml](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L44-L72)
+`cosign` can be used to verify image signatures, see:
+- [.github/workflows/verify-redhat.yaml](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L30-L31)
 
-## Skopeo
+## Skopeo, Podman and Buildah
 
-Since `skopeo` uses the same core [libraries](https://github.com/containers) as podman (_and buildah for that matter_),
-we can use the same [policy.json](samples/HOME/.config/containers/policy-ubi9.json) and [registries.yaml](samples/HOME/.config/containers/registries.d/sigstore-registries.yaml)
-to only allow signed images to be copied from one registry to another, see: [.github/workflows/verify-redhat.yaml](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L85-L108)
+`Skopeo`, `Podman` and `Buildah` can be [configured](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L44-L56) via a [policy.json](samples/HOME/.config/containers/policy-ubi9.json) and [registries.yaml](samples/HOME/.config/containers/registries.d/sigstore-registries.yaml)
+to only allow consuming signed images, see:
+- [.github/workflows/verify-redhat.yaml - skopeo](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L143-L144)
+- [.github/workflows/verify-redhat.yaml - podman](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L58-L59)
+- [.github/workflows/verify-redhat.yaml - buildah](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L102-L103)
+
+## oc-mirror v2
+
+[oc-mirror v2](https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html-single/disconnected_environments/index#about-installing-oc-mirror-v2) supports signature validation when mirroring for disconnected installations.
+`oc-mirror` can be configured in the same way as `Skopeo`, `Podman` and `Buildah` via a [policy.json](samples/HOME/.config/containers/policy-ubi9.json) and [registries.yaml](samples/HOME/.config/containers/registries.d/sigstore-registries.yaml).
+The only difference is, `oc-mirror` requires the CLI options `--remove-signatures=false --secure-policy=true`, see:
+- [.github/workflows/verify-redhat.yaml](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L187-L188)
 
 ## OCP >= 4.18 - ClusterImagePolicy
 
@@ -124,12 +131,6 @@ metadata.
 
 The TLDR is; `containers/image` only supports validating against the [email SAN](https://search.sigstore.dev/?logIndex=406429900) and
 does not support [URL SAN](https://search.sigstore.dev/?logIndex=406064670) which is used by GitHub Actions and Fulcio.
-
-## oc-mirror
-
-[oc-mirror v2](https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html-single/disconnected_environments/index#about-installing-oc-mirror-v2) supports signature validation while mirroring for disconnected installations.
-`oc-mirror` can be configured via its [policy.json](samples/HOME/.config/containers/policy-ubi9.json) and [registries.yaml](samples/HOME/.config/containers/registries.d/sigstore-registries.yaml)
-to only allow signed images, see: [.github/workflows/verify-redhat.yaml](https://github.com/garethahealy/verifying-redhat-images/blob/main/.github/workflows/verify-redhat.yaml#L124-L144)
 
 ## ACS Signature Integration
 
