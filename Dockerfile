@@ -1,3 +1,3 @@
-FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.23-6.1758133907@sha256:26acabfda6160ef348ceebba38e6616c43bf98a18800bf6afc20913556389c06
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.23-6.1761164966@sha256:e53c6cc7fe4e1cdf6baaea25ec472db62ac74f3f7cf41c12ce74f3407d81d872
 
 RUN echo "Test image"
