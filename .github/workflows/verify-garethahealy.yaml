@@ -141,7 +141,7 @@ jobs:
           echo "REKOR_KEY=$(cat rekor.pub | base64 -w 0)" >> "$GITHUB_OUTPUT"
 
       - name: Update samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml with keys
-        uses: mikefarah/yq@7ccaf8e700ce99eb3f0f6cef7f5930a0b3c827cd # v4.49.2
+        uses: mikefarah/yq@065b200af9851db0d5132f50bc10b1406ea5c0a8 # v4.50.1
         env:
           FULCIO_CA: "${{ steps.certs.outputs.FULCIO_CA }}"
           REKOR_KEY: "${{ steps.certs.outputs.REKOR_KEY }}"
@@ -149,7 +149,7 @@ jobs:
           cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioCAData = env(FULCIO_CA), .spec.policy.rootOfTrust.fulcioCAWithRekor.rekorKeyData = env(REKOR_KEY)' samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml
 
       - name: Update samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml with issuer/email
-        uses: mikefarah/yq@7ccaf8e700ce99eb3f0f6cef7f5930a0b3c827cd # v4.49.2
+        uses: mikefarah/yq@065b200af9851db0d5132f50bc10b1406ea5c0a8 # v4.50.1
         env:
           OIDC_ISSUER: "https://github.com/login/oauth"
           SIGNED_EMAIL: "garethahealy@gmail.com"
@@ -157,7 +157,7 @@ jobs:
           cmd: yq --inplace '.spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioSubject.oidcIssuer = env(OIDC_ISSUER), .spec.policy.rootOfTrust.fulcioCAWithRekor.fulcioSubject.signedEmail = env(SIGNED_EMAIL)' samples/ocp/ImagePolicy/garethahealy_manually_fulcio.yaml
 
       - name: Update samples/ocp/Deployments/garethahealy.yaml with image
-        uses: mikefarah/yq@7ccaf8e700ce99eb3f0f6cef7f5930a0b3c827cd # v4.49.2
+        uses: mikefarah/yq@065b200af9851db0d5132f50bc10b1406ea5c0a8 # v4.50.1
         env:
           image_uri: "${{ needs.build-and-sign.outputs.image_uri }}"
         with:
