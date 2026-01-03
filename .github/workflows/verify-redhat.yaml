@@ -25,7 +25,7 @@ jobs:
         run: wget -O ~/redhat-sigstore.pub https://security.access.redhat.com/data/63405576.txt
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v4.0.0
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
       - name: Verify ubi9/openjdk-21-runtime via cosign
         run: cosign verify --key /home/runner/redhat-sigstore.pub --insecure-ignore-tlog=true registry.access.redhat.com/ubi9/openjdk-21-runtime:1.21-1.1741781258@sha256:360822c35c5741f542ab78fe123e6c4d9b68e0113a88d6e0250bb1f377b17f29
