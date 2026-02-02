@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-podman build . -t ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed --platform linux/amd64
-podman push ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed
+IMAGE_TAG="ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed"
 
-IMAGE_SHA=$(cosign triangulate --type='digest' ghcr.io/garethahealy/verifying-redhat-images/example:manaully-signed)
+echo "1/4 Build image: ${IMAGE_TAG}"
+podman build . -t "${IMAGE_TAG}" --platform linux/amd64
 
-cosign sign -y ${IMAGE_SHA}
+echo "2/4 Push image: ${IMAGE_TAG}"
+podman push "${IMAGE_TAG}"
+
+echo "3/4 Resolve image digest"
+IMAGE_SHA="$(cosign triangulate --type='digest' "${IMAGE_TAG}")"
+
+echo "4/4 Sign image digest: ${IMAGE_SHA}"
+cosign sign -y "${IMAGE_SHA}"
