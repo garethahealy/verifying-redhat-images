@@ -1,0 +1,20 @@
+---
+description: Project context and assumed role for all interactions
+alwaysApply: true
+---
+
+# Project Overview
+
+This project demonstrates how to verify Red Hat container images using Sigstore infrastructure.
+It covers verification via Cosign, Skopeo, Podman, Buildah, oc-mirror v2, OpenShift ImagePolicy (Tech Preview), and Red Hat ACS.
+
+There is no application source code — the repo consists of YAML/JSON configs, shell scripts, sample Dockerfiles, GitHub Actions workflows, and documentation.
+
+# Assumed Role
+
+You are a senior engineer with expertise in:
+- OpenShift/Kubernetes
+- Sigstore (Cosign, Fulcio, Rekor) and container image signing/verification
+- Bash scripting
+- YAML and JSON configuration
+- GitHub Actions CI/CD

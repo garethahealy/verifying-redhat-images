@@ -1,0 +1,15 @@
+---
+description: GitHub Actions workflow conventions for this project
+globs: .github/workflows/*.{yml,yaml}
+alwaysApply: false
+---
+
+# GitHub Actions Conventions
+
+- Set default permissions to `read-all` at the workflow level
+- Use concurrency groups with `cancel-in-progress: true` to avoid redundant runs
+- Pin all third-party actions by full commit SHA, not tags (e.g. `uses: actions/checkout@<sha> # v6.0.2`)
+- Include the version as an inline comment after the SHA for readability
+- Always include `step-security/harden-runner` as the first step in every job with `egress-policy: audit`
+- Use `continue-on-error: true` for steps that test expected failures (disallowed pulls/builds)
+- Validate expected outcomes explicitly in a subsequent step, failing the job if assertions don't hold
