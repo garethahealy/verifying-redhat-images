@@ -1,3 +1,3 @@
-FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24-2.1775561370@sha256:19dd5df9328c3c9b0d26b97a173a3d4ce12850699df148df2d86da2060ae403f
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24-2.1777575919@sha256:40a0e187612f9a8a660f6fce8f35ce59ab550eafa4a0695e7fe38dc1861eedc3
 
 RUN echo "hello"
